@@ -1,0 +1,273 @@
+# Blender MTL File: 'None'
+# Material Count: 8
+
+newmtl Envi
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 1.000000 1.000000 1.000000
+Ni 1.000000
+d 1.000000
+map_Kd textures/Envi_baseColor.dds
+illum 2
+
+newmtl Furniture
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+map_Kd textures/Furniture_baseColor.dds
+map_Bump textures/Furniture_normal.dds
+map_ORM textures/Furniture_AO_Roughness_Metalness.dds
+normal_map_invert_y 0
+two_channel_normal_map 1
+use_ao_in_aorm_map 1
+illum 2
+
+newmtl Two_sided_furniture
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+map_Kd textures/Furniture_baseColor.dds
+map_Bump textures/Furniture_normal.dds
+map_ORM textures/Furniture_AO_Roughness_Metalness.dds
+normal_map_invert_y 0
+two_channel_normal_map 1
+use_ao_in_aorm_map 1
+two_sided 1
+illum 2
+
+newmtl Wood
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+map_Kd textures/Wood_baseColor.dds
+map_Bump textures/Wood_normal.dds
+map_ORM textures/Wood_AO_Roughness_Metalness.dds
+use_ao_in_aorm_map 1
+normal_map_invert_y 0
+two_channel_normal_map 1
+illum 2
+
+newmtl Ladder
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 0.500000
+map_Kd textures/Wood_baseColor.dds
+map_Bump textures/Wood_normal.dds
+map_ORM textures/Wood_AO_Roughness_Metalness.dds
+normal_map_invert_y 0
+two_channel_normal_map 1
+use_ao_in_aorm_map 1
+illum 2
+
+newmtl Painted_wood
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+map_Kd textures/Painted_wood_baseColor.dds
+map_Bump textures/Wood_normal.dds
+map_ORM textures/Painted_wood_AO_Roughness_Metalness.dds
+use_ao_in_aorm_map 1
+normal_map_invert_y 0
+two_channel_normal_map 1
+illum 2
+
+newmtl Props
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.00000
+map_Kd textures/Props_baseColor.dds
+map_Bump textures/Props_normal.dds
+map_ORM textures/Props_AO_Roughness_Metalness.dds
+use_ao_in_aorm_map 1
+two_channel_normal_map 1
+normal_map_invert_y 0
+two_sided 1
+illum 2
+
+newmtl Pipes
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.00000
+map_Kd textures/Props_baseColor.dds
+map_Bump textures/Props_normal.dds
+map_ORM textures/Props_AO_Roughness_Metalness.dds
+use_ao_in_aorm_map 1
+two_channel_normal_map 1
+normal_map_invert_y 0
+illum 2
+
+newmtl Handle_and_hinges
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.00000
+map_Kd textures/Props_baseColor.dds
+map_Bump textures/Props_normal.dds
+map_ORM textures/Props_AO_Roughness_Metalness.dds
+use_ao_in_aorm_map 1
+two_channel_normal_map 1
+normal_map_invert_y 0
+illum 2
+
+newmtl Roof
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+map_Kd textures/Roof_baseColor.dds
+map_Bump textures/Roof_normal.dds
+map_ORM textures/Roof_AO_Roughness_Metalness.dds
+use_ao_in_aorm_map 1
+two_channel_normal_map 1
+normal_map_invert_y 0
+illum 2
+
+newmtl Ropes
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.00000
+map_Kd textures/Ropes_and_glass_baseColor.dds
+map_Bump textures/Ropes_and_glass_normal.dds
+map_ORM textures/Ropes_and_glass_AO_Roughness_Metalness.DDS
+normal_map_invert_y 0
+two_channel_normal_map 1
+use_ao_in_aorm_map 1
+illum 2
+
+newmtl Rug
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.00000
+map_Kd textures/Ropes_and_glass_baseColor.dds
+map_Bump textures/Ropes_and_glass_normal.dds
+map_ORM textures/Ropes_and_glass_AO_Roughness_Metalness.DDS
+normal_map_invert_y 0
+two_channel_normal_map 1
+two_sided 1
+illum 2
+
+newmtl Glass
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 0.500000
+#d 1.00000
+map_Kd textures/Ropes_and_glass_baseColor.dds
+map_Bump textures/Ropes_and_glass_normal.dds
+map_ORM textures/Ropes_and_glass_AO_Roughness_Metalness.DDS
+two_channel_normal_map 1
+normal_map_invert_y 0
+illum 2
+
+newmtl Tree_trunks
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.00000
+map_Kd textures/Trees_baseColor.dds
+map_Bump textures/Trees_normal.dds
+map_ORM textures/Trees_AO_Roughness_Metalness.dds
+use_ao_in_aorm_map 1
+two_channel_normal_map 1
+normal_map_invert_y 0
+illum 2
+
+newmtl Tree_trunks_fog
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+#d 1.00000
+d 0.50000
+map_Kd textures/Trees_baseColor.dds
+map_Bump textures/Trees_normal.dds
+map_ORM textures/Trees_AO_Roughness_Metalness.dds
+use_ao_in_aorm_map 1
+two_channel_normal_map 1
+normal_map_invert_y 0
+illum 2
+
+newmtl Branches
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.00000
+map_Kd textures/Trees_baseColor.dds
+#map_Bump textures/Trees_normal.dds
+map_ORM textures/Trees_AO_Roughness_Metalness.dds
+use_ao_in_aorm_map 1
+two_channel_normal_map 1
+normal_map_invert_y 0
+illum 2
+
+newmtl Foliage
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.00000
+#d 0.50000
+map_Kd textures/Trees_baseColor.dds
+#map_Bump textures/Trees_normal.dds
+map_ORM textures/Trees_AO_Roughness_Metalness.dds
+normal_map_invert_y 0
+two_channel_normal_map 1
+illum 2
+alpha_cut_out 1

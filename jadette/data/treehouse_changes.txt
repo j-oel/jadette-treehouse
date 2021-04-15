@@ -1,0 +1,12 @@
+These are the main changes:
+
+Conversion to obj format.
+Renaming of objects, materials and files.
+Modified roughness and metalness.
+Removal of lightmap component and replaced by ambient occlusion.
+Separation of some parts as separate objects.
+Separation of lowest part of trees, ladder and winch rope to separate objects and
+setting of alpha vertex colors - this is to model the fog as transparency. In the 
+original model this is made by having a separate UV-set and a special part of the 
+texture for the alpha values. Also removed that part of the texture.
+Conversion of textures to dds format.
