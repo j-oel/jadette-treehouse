@@ -1,0 +1,10 @@
+                             Jadette
+
+               Copyright (C) 2020-2021 Joel Jansson
+
+Distributed under GNU GPL version 3 (see the file gpl-3.0.txt) plus the 
+additional terms that is dictated by the file src\3rdparty\MS\LICENSE-MS.txt
+(namely that those copyright and permission notices have to be included in
+all copies or substantial portions). The file src\3rdparty\catch\catch.hpp
+is covered by the Boost Software License, which is found in the file
+LICENSE_1_0.txt in that same directory.

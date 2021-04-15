@@ -1,0 +1,25 @@
+name: CI
+
+on: [push]
+
+
+jobs:
+  test:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        build_configuration: ['Release', 'Debug', 'Minimal']
+        build_platform: ['x64', 'x86']
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1
+
+    - name: Build ${{ matrix.build_configuration }}
+      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+      run: msbuild /m /p:Configuration=${{ matrix.build_configuration }} /p:Platform=${{ matrix.build_platform }} src\Jadette.vcxproj
+
+    - name: Test ${{ matrix.build_configuration }}
+      run: msbuild /m /p:Configuration=${{ matrix.build_configuration }} /p:Platform=${{ matrix.build_platform }} src\tests\Jadette_tests.vcxproj
