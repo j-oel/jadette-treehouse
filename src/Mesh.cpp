@@ -15,19 +15,8 @@
 
 int Mesh::s_draw_calls = 0;
 
-Mesh::Mesh(ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList& command_list, 
-    const std::string& filename)
-{
-    Vertices vertices;
-    std::vector<int> indices;
 
-    read_obj_file(filename, vertices, indices, Obj_flip_v::yes);
-
-    create_and_fill_vertex_buffers(vertices, indices, device, command_list, false);
-    create_and_fill_index_buffer(indices, device, command_list);
-}
-
-Mesh::Mesh(ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList& command_list,
+Mesh::Mesh(ID3D12Device& device, ID3D12GraphicsCommandList& command_list,
     const Vertices& vertices, const std::vector<int>& indices, bool transparent/* = false*/)
     : m_transparent(transparent)
 {
@@ -108,7 +97,7 @@ DirectX::XMVECTOR Mesh::center(int triangle_index) const
 namespace
 {
     template <typename T>
-    void create_and_fill_vertex_buffer(ComPtr<ID3D12Device> device,
+    void create_and_fill_vertex_buffer(ID3D12Device& device,
         ID3D12GraphicsCommandList& command_list,
         ComPtr<ID3D12Resource>& destination_buffer,
         ComPtr<ID3D12Resource>& temp_upload_resource,
@@ -116,7 +105,7 @@ namespace
     {
         const UINT vertex_buffer_size = static_cast<UINT>(source_data.size() * sizeof(T));
         create_and_fill_buffer(device, command_list, destination_buffer,
-            temp_upload_resource, source_data, vertex_buffer_size, view, vertex_buffer_size);
+            temp_upload_resource, source_data.data(), vertex_buffer_size, view, vertex_buffer_size);
         view.StrideInBytes = sizeof(T);
     }
 }
@@ -151,7 +140,7 @@ DirectX::XMVECTOR calculate_center_of_triangle(const Vertices& vertices,
 }
 
 void Mesh::create_and_fill_vertex_buffers(const Vertices& vertices,
-    const std::vector<int>& indices, ComPtr<ID3D12Device> device,
+    const std::vector<int>& indices, ID3D12Device& device,
     ID3D12GraphicsCommandList& command_list, bool transparent)
 {
     m_vertices_count = vertices.positions.size();
@@ -194,14 +183,14 @@ void Mesh::create_and_fill_vertex_buffers(const Vertices& vertices,
 }
 
 void Mesh::create_and_fill_index_buffer(const std::vector<int>& indices,
-    ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList& command_list)
+    ID3D12Device& device, ID3D12GraphicsCommandList& command_list)
 {
     m_index_count = static_cast<UINT>(indices.size());
 
     const UINT index_buffer_size = static_cast<UINT>(indices.size() * sizeof(int));
 
     create_and_fill_buffer(device, command_list, m_index_buffer, 
-        m_temp_upload_resource_ib, indices, index_buffer_size,
+        m_temp_upload_resource_ib, indices.data(), index_buffer_size,
         m_index_buffer_view, index_buffer_size);
 
     SET_DEBUG_NAME(m_index_buffer, L"Index Buffer");
@@ -276,54 +265,42 @@ void calculate_and_add_tangent_and_bitangent(DirectX::XMVECTOR v[vertex_count_pe
     }
 }
 
-template <typename T>
-void construct_instance_data(ComPtr<ID3D12Device> device,
-    ID3D12GraphicsCommandList& command_list, UINT instance_count,
-    ComPtr<ID3D12Resource>& instance_vertex_buffer, ComPtr<ID3D12Resource>& upload_resource,
-    D3D12_VERTEX_BUFFER_VIEW& instance_vertex_buffer_view, UINT& vertex_buffer_size,
-    D3D12_RESOURCE_STATES after_state = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER)
-{
-    vertex_buffer_size = static_cast<UINT>(instance_count * sizeof(T));
-    std::vector<T> instance_data;
-    instance_data.resize(instance_count);
-
-    create_and_fill_buffer(device, command_list, instance_vertex_buffer,
-        upload_resource, instance_data, vertex_buffer_size, instance_vertex_buffer_view,
-        vertex_buffer_size, after_state);
-
-    instance_vertex_buffer_view.StrideInBytes = sizeof(T);
-}
-
-Instance_data::Instance_data(ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList& command_list,
-    UINT instance_count, ComPtr<ID3D12DescriptorHeap> texture_descriptor_heap, UINT texture_index)
+Instance_data::Instance_data(ID3D12Device& device, UINT instance_count, 
+    ID3D12DescriptorHeap& texture_descriptor_heap, UINT texture_index)
+    : m_vertex_buffer_size(instance_count * sizeof(Per_instance_transform))
 {
     if (instance_count == 0)
         return;
     
-    construct_instance_data<Per_instance_transform>(device, command_list, 
-        instance_count,
-        m_instance_vertex_buffer, m_upload_resource, m_instance_vertex_buffer_view,
-        m_vertex_buffer_size, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    UINT size = m_vertex_buffer_size;
+    create_upload_heap(device, size, m_upload_resource);
+    create_gpu_buffer(device, size, m_instance_vertex_buffer,
+        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    m_instance_vertex_buffer_view.BufferLocation = 
+        m_instance_vertex_buffer->GetGPUVirtualAddress();
+    m_instance_vertex_buffer_view.SizeInBytes = size;
+    m_instance_vertex_buffer_view.StrideInBytes = sizeof(Per_instance_transform);
+
     SET_DEBUG_NAME(m_instance_vertex_buffer, L"Translation Rotation Instance Buffer");
 
     UINT position = descriptor_position_in_descriptor_heap(device, texture_index);
 
     CD3DX12_CPU_DESCRIPTOR_HANDLE destination_descriptor(
-        texture_descriptor_heap->GetCPUDescriptorHandleForHeapStart(), position);
+        texture_descriptor_heap.GetCPUDescriptorHandleForHeapStart(), position);
 
     D3D12_BUFFER_SRV srv = { 0, instance_count, sizeof(Per_instance_transform),
         D3D12_BUFFER_SRV_FLAG_NONE };
     D3D12_SHADER_RESOURCE_VIEW_DESC s = { DXGI_FORMAT_UNKNOWN, D3D12_SRV_DIMENSION_BUFFER,
                                           D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, srv };
-    device->CreateShaderResourceView(m_instance_vertex_buffer.Get(), &s, destination_descriptor);
+    device.CreateShaderResourceView(m_instance_vertex_buffer.Get(), &s, destination_descriptor);
 
     m_structured_buffer_gpu_descriptor_handle = CD3DX12_GPU_DESCRIPTOR_HANDLE(
-        texture_descriptor_heap->GetGPUDescriptorHandleForHeapStart(), position);
+        texture_descriptor_heap.GetGPUDescriptorHandleForHeapStart(), position);
 }
 
 void Instance_data::upload_new_data_to_gpu(ID3D12GraphicsCommandList& command_list,
     const std::vector<Per_instance_transform>& instance_data)
 {
-    upload_new_data(command_list, instance_data, m_instance_vertex_buffer, m_upload_resource,
+    upload_new_data(command_list, instance_data.data(), m_instance_vertex_buffer, m_upload_resource,
         m_vertex_buffer_size, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 }

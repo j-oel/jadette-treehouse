@@ -62,7 +62,11 @@ Config read_config(const std::string& config_file)
         }
         else if (input == "scene")
         {
+#ifndef NO_SCENE_FILE
             file >> config.scene_file;
+#else
+            file >> input;
+#endif
         }
         else if (input == "edit_mode")
         {
@@ -145,12 +149,20 @@ BOOL CALLBACK monitor_enum_proc(HMONITOR h_monitor, HDC, LPRECT monitor_rect, LP
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int cmd_show)
 {
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-    
+         
+#ifndef NO_CFG_FILE
     std::string config_file(data_path + std::string("init.cfg"));
+#endif
 
+#ifdef __cpp_exceptions
     try
+#endif
     {
+#ifndef NO_CFG_FILE
         Config config = read_config(config_file);
+#else
+        Config config;
+#endif
         std::vector<Monitor> monitors;
         EnumDisplayMonitors(nullptr, nullptr, monitor_enum_proc, bit_cast<LPARAM>(&monitors));
 
@@ -214,6 +226,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int cmd_show)
         return exit_code;
 
     }
+#ifdef __cpp_exceptions
     catch (std::bad_alloc&)
     {
         print("Tried to allocate more memory than is available.", "Fatal error.");
@@ -242,6 +255,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int cmd_show)
             (e.monitor_count == 1 ? "1.": "\nat least 1 and maximum " + 
                 std::to_string(e.monitor_count) + "."), "Error");
     }
+#endif
     return 1;
 }
 
@@ -295,13 +309,15 @@ LRESULT CALLBACK window_procedure(HWND window, UINT message, WPARAM w_param, LPA
         case WM_KEYDOWN:
             if (w_param == VK_ESCAPE)
                 PostQuitMessage(0);
+#ifndef NO_UI
             else
                 if (engine)
                 {
                     engine->input.key_down(w_param);
                 }
+#endif
             return 0;
-
+#ifndef NO_UI
         case WM_KEYUP:
             if (engine)
             {
@@ -371,7 +387,7 @@ LRESULT CALLBACK window_procedure(HWND window, UINT message, WPARAM w_param, LPA
             }
             break;
         }
-
+#endif
         case WM_DESTROY:
             PostQuitMessage(0);
             return 0;

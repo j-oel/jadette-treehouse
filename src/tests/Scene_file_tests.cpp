@@ -5,17 +5,12 @@
 // See gpl-3.0.txt or <https://www.gnu.org/licenses/>
 
 
-#include "../3rdparty/catch/catch.hpp"
+#include "pch_tests.h"
 
-#include "../dx12min.h"
 #include "../Scene_file.h"
 #include "../Scene_components.h"
 #include "../util.h"
 #include "../dx12_util.h"
-
-#include <dxgi1_6.h>
-#include <winerror.h>
-#include <sstream>
 
 
 using namespace std;
@@ -50,17 +45,19 @@ ComPtr<ID3D12Device> create_device()
 
 SCENARIO("The scene parser works")
 {
-    auto device = create_device();
+    auto dev = create_device();
+    auto& device = *dev.Get();
 
     ComPtr<ID3D12CommandAllocator> allocator;
-    throw_if_failed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
+    throw_if_failed(device.CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
         IID_PPV_ARGS(&allocator)));
 
     auto command_list = create_command_list(device, allocator);
 
     ComPtr<ID3D12DescriptorHeap> texture_descriptor_heap;
     const int textures_count = 1;
-    create_texture_descriptor_heap(device, texture_descriptor_heap, textures_count);
+    create_texture_descriptor_heap(dev, texture_descriptor_heap, textures_count);
+    auto& heap = *texture_descriptor_heap.Get();
 
     Scene_components sc;
 
@@ -76,7 +73,7 @@ SCENARIO("The scene parser works")
         {
             int texture_index = 0;
             read_scene_file_stream(scene_data, sc, device, *command_list.Get(), texture_index,
-                texture_descriptor_heap, 0);
+                heap);
 
 
             THEN("the object is available")
@@ -109,7 +106,7 @@ SCENARIO("The scene parser works")
         {
             int texture_index = 0;
             read_scene_file_stream(scene_data, sc, device, *command_list.Get(), texture_index,
-                texture_descriptor_heap, 0);
+                heap);
 
 
             THEN("the objects are available")
@@ -150,7 +147,7 @@ SCENARIO("The scene parser works")
         {
             int texture_index = 0;
             read_scene_file_stream(scene_data, sc, device, *command_list.Get(), texture_index,
-                texture_descriptor_heap, 0);
+                heap);
 
 
             THEN("the objects are available")
@@ -286,7 +283,7 @@ SCENARIO("The scene parser works")
             {
                 int texture_index = 0;
                 REQUIRE_THROWS_AS(read_scene_file_stream(scene_data, sc, device,
-                    *command_list.Get(), texture_index, texture_descriptor_heap, 0),
+                    *command_list.Get(), texture_index, heap),
                     Texture_not_defined);
             }
         }
@@ -304,7 +301,7 @@ SCENARIO("The scene parser works")
             {
                 int texture_index = 0;
                 REQUIRE_THROWS_AS(read_scene_file_stream(scene_data, sc, device,
-                    *command_list.Get(), texture_index, texture_descriptor_heap, 0),
+                    *command_list.Get(), texture_index, heap),
                     Model_not_defined);
             }
         }
@@ -323,7 +320,7 @@ SCENARIO("The scene parser works")
             {
                 int texture_index = 0;
                 REQUIRE_THROWS_AS(read_scene_file_stream(scene_data, sc, device,
-                    *command_list.Get(), texture_index, texture_descriptor_heap, 0),
+                    *command_list.Get(), texture_index, heap),
                     Object_not_defined);
             }
         }
@@ -340,7 +337,7 @@ SCENARIO("The scene parser works")
             {
                 int texture_index = 0;
                 REQUIRE_THROWS_AS(read_scene_file_stream(scene_data, sc, device,
-                    *command_list.Get(), texture_index, texture_descriptor_heap, 0),
+                    *command_list.Get(), texture_index, heap),
                     File_open_error);
             }
         }
@@ -358,7 +355,7 @@ SCENARIO("The scene parser works")
             {
                 int texture_index = 0;
                 REQUIRE_THROWS_AS(read_scene_file_stream(scene_data, sc, device,
-                    *command_list.Get(), texture_index, texture_descriptor_heap, 0),
+                    *command_list.Get(), texture_index, heap),
                     File_open_error);
             }
         }
@@ -375,7 +372,7 @@ SCENARIO("The scene parser works")
             {
                 int texture_index = 0;
                 REQUIRE_THROWS_AS(read_scene_file_stream(scene_data, sc, device,
-                    *command_list.Get(), texture_index, texture_descriptor_heap, 0),
+                    *command_list.Get(), texture_index, heap),
                     Read_error);
             }
         }

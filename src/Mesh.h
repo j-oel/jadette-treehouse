@@ -7,9 +7,6 @@
 
 #pragma once
 
-#include "dx12min.h"
-#include <directxmath.h>
-#include <directxpackedvector.h>
 
 using Microsoft::WRL::ComPtr;
 
@@ -59,9 +56,7 @@ enum class Input_layout;
 class Mesh
 {
 public:
-    Mesh(ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList& command_list, 
-        const std::string& filename);
-    Mesh(ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList& command_list,
+    Mesh(ID3D12Device& device, ID3D12GraphicsCommandList& command_list,
         const Vertices& vertices, const std::vector<int>& indices, bool transparent = false);
 
     void release_temp_resources();
@@ -79,8 +74,8 @@ public:
 private:
 
     void create_and_fill_vertex_buffers(const Vertices& vertices, const std::vector<int>& indices,
-        ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList& command_list, bool transparent);
-    void create_and_fill_index_buffer(const std::vector<int>& indices, ComPtr<ID3D12Device> device, 
+        ID3D12Device& device, ID3D12GraphicsCommandList& command_list, bool transparent);
+    void create_and_fill_index_buffer(const std::vector<int>& indices, ID3D12Device& device, 
         ID3D12GraphicsCommandList& command_list);
 
 
@@ -173,9 +168,8 @@ struct Per_instance_transform
 class Instance_data
 {
 public:
-    Instance_data(ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList& command_list,
-        UINT instance_count, ComPtr<ID3D12DescriptorHeap> texture_descriptor_heap,
-        UINT texture_index);
+    Instance_data(ID3D12Device& device, UINT instance_count, 
+        ID3D12DescriptorHeap& texture_descriptor_heap, UINT texture_index);
     void upload_new_data_to_gpu(ID3D12GraphicsCommandList& command_list,
         const std::vector<Per_instance_transform>& instance_data);
     D3D12_GPU_DESCRIPTOR_HANDLE srv_gpu_handle() const 

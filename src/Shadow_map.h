@@ -8,7 +8,6 @@
 #pragma once
 
 #include "Depth_stencil.h"
-#include "Depth_pass.h"
 #include "View.h"
 
 
@@ -16,6 +15,7 @@ using Microsoft::WRL::ComPtr;
 
 
 class Scene;
+class Depth_pass;
 
 struct Light
 {
@@ -32,8 +32,8 @@ struct Light
 class Shadow_map
 {
 public:
-    Shadow_map(ComPtr<ID3D12Device> device, UINT swap_chain_buffer_count,
-        ComPtr<ID3D12DescriptorHeap> texture_descriptor_heap,
+    Shadow_map(ID3D12Device& device, UINT swap_chain_buffer_count,
+        ID3D12DescriptorHeap& texture_descriptor_heap,
         UINT texture_index, UINT texture_index_increment, Bit_depth bit_depth = Bit_depth::bpp16,
         int size = 1024);
     void update(Light& light);

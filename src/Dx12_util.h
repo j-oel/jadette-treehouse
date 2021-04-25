@@ -72,7 +72,7 @@ template <typename T> void copy_to_read_back_memory(ID3D12GraphicsCommandList& c
         value_that_means_copy_everything);
 }
 
-ComPtr<ID3D12GraphicsCommandList> create_command_list(ComPtr<ID3D12Device> device,
+ComPtr<ID3D12GraphicsCommandList> create_command_list(ID3D12Device& device,
     ComPtr<ID3D12CommandAllocator> command_allocator);
 
 void create_texture_descriptor_heap(ComPtr<ID3D12Device> device,
@@ -81,44 +81,25 @@ void create_texture_descriptor_heap(ComPtr<ID3D12Device> device,
 void create_descriptor_heap(ComPtr<ID3D12Device> device,
     ComPtr<ID3D12DescriptorHeap>& render_target_view_heap, UINT descriptor_count);
 
-
-template <typename T>
-void upload_buffer_to_gpu(const T& source_data, size_t size,
+void upload_buffer_to_gpu(const void* source_data, // Used as argument to memcpy, that's
+    size_t size,                                   // why the type is void*.
     ComPtr<ID3D12Resource>& destination_buffer,
     ComPtr<ID3D12Resource>& temp_upload_resource,
     ID3D12GraphicsCommandList& command_list,
-    D3D12_RESOURCE_STATES after_state)
-{
-    char* temp_upload_resource_data = nullptr;
-    const size_t begin = 0;
-    const size_t end = 0;
-    const CD3DX12_RANGE empty_cpu_read_range(begin, end);
-    const UINT subresource_index = 0;
-    throw_if_failed(temp_upload_resource->Map(subresource_index, &empty_cpu_read_range,
-        bit_cast<void**>(&temp_upload_resource_data)));
-    memcpy(temp_upload_resource_data, source_data.data(), size);
-    const D3D12_RANGE* value_that_means_everything_might_have_changed = nullptr;
-    temp_upload_resource->Unmap(subresource_index,
-        value_that_means_everything_might_have_changed);
+    D3D12_RESOURCE_STATES after_state);
 
-    command_list.CopyResource(destination_buffer.Get(), temp_upload_resource.Get());
-    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(destination_buffer.Get(),
-        D3D12_RESOURCE_STATE_COPY_DEST, after_state);
-    command_list.ResourceBarrier(1, &barrier);
-}
-
-inline void create_resource(ComPtr<ID3D12Device> device, UINT size,
+inline void create_resource(ID3D12Device& device, UINT size,
     ComPtr<ID3D12Resource>& resource, const D3D12_HEAP_PROPERTIES* properties,
     D3D12_RESOURCE_STATES initial_state)
 {
     D3D12_CLEAR_VALUE* clear_value = nullptr;
 
     auto desc = CD3DX12_RESOURCE_DESC::Buffer(size);
-    throw_if_failed(device->CreateCommittedResource(properties, D3D12_HEAP_FLAG_NONE, &desc,
+    throw_if_failed(device.CreateCommittedResource(properties, D3D12_HEAP_FLAG_NONE, &desc,
         initial_state, clear_value, IID_PPV_ARGS(resource.GetAddressOf())));
 }
 
-inline void create_upload_heap(ComPtr<ID3D12Device> device, UINT size,
+inline void create_upload_heap(ID3D12Device& device, UINT size,
     ComPtr<ID3D12Resource>& upload_resource)
 {
     auto heap_properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
@@ -126,19 +107,20 @@ inline void create_upload_heap(ComPtr<ID3D12Device> device, UINT size,
         D3D12_RESOURCE_STATE_GENERIC_READ);
 }
 
-inline void create_gpu_buffer(ComPtr<ID3D12Device> device, UINT size,
-    ComPtr<ID3D12Resource>& resource)
+inline void create_gpu_buffer(ID3D12Device& device, UINT size,
+    ComPtr<ID3D12Resource>& resource, D3D12_RESOURCE_STATES initial_state =
+    D3D12_RESOURCE_STATE_COPY_DEST)
 {
     auto heap_properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-    create_resource(device, size, resource, &heap_properties, D3D12_RESOURCE_STATE_COPY_DEST);
+    create_resource(device, size, resource, &heap_properties, initial_state);
 }
 
-template <typename T, typename View_type>
-void create_and_fill_buffer(ComPtr<ID3D12Device> device,
+template <typename View_type>
+void create_and_fill_buffer(ID3D12Device& device,
     ID3D12GraphicsCommandList& command_list,
     ComPtr<ID3D12Resource>& destination_buffer,
     ComPtr<ID3D12Resource>& temp_upload_resource,
-    const T& source_data, UINT data_size, View_type& view, UINT view_size,
+    const void* source_data, UINT data_size, View_type& view, UINT view_size,
     D3D12_RESOURCE_STATES after_state = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER)
 {
     assert(data_size <= view_size);
@@ -152,21 +134,18 @@ void create_and_fill_buffer(ComPtr<ID3D12Device> device,
     view.SizeInBytes = view_size;
 }
 
-template <typename T>
-void upload_new_data(ID3D12GraphicsCommandList& command_list,
-    const std::vector<T>& instance_data, ComPtr<ID3D12Resource>& instance_vertex_buffer,
-    ComPtr<ID3D12Resource>& upload_resource, size_t vertex_buffer_size,
+inline void upload_new_data(ID3D12GraphicsCommandList& command_list, const void* data,
+    ComPtr<ID3D12Resource>& buffer, ComPtr<ID3D12Resource>& upload_resource, size_t size,
     D3D12_RESOURCE_STATES before_state = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER)
 {
-    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(instance_vertex_buffer.Get(),
+    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(buffer.Get(),
         before_state, D3D12_RESOURCE_STATE_COPY_DEST);
     UINT barriers_count = 1;
     command_list.ResourceBarrier(barriers_count, &barrier);
-    upload_buffer_to_gpu(instance_data, vertex_buffer_size, instance_vertex_buffer,
-        upload_resource, command_list, before_state);
+    upload_buffer_to_gpu(data, size, buffer, upload_resource, command_list, before_state);
 }
 
-UINT descriptor_position_in_descriptor_heap(ComPtr<ID3D12Device> device, UINT descriptor_index);
+UINT descriptor_position_in_descriptor_heap(ID3D12Device& device, UINT descriptor_index);
 
-void create_null_descriptor(ComPtr<ID3D12Device> device,
-    ComPtr<ID3D12DescriptorHeap> descriptor_heap, UINT descriptor_index);
+void create_null_descriptor(ID3D12Device& device,
+    ID3D12DescriptorHeap& descriptor_heap, UINT descriptor_index);

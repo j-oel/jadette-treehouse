@@ -13,17 +13,18 @@
 #include "View_controller.h"
 #include "Input.h"
 #include "Scene.h"
+#include "Graphics.h" // For Config
 
 #include <iomanip>
 
 
 
 User_interface::User_interface(std::shared_ptr<Dx12_display> dx12_display,
-    Root_signature* root_signature, ComPtr<ID3D12DescriptorHeap> texture_descriptor_heap, 
+    Root_signature* root_signature, ID3D12DescriptorHeap& texture_descriptor_heap, 
     UINT texture_index, Input& input, HWND window, const Config& config) :
     m_dx12_display(dx12_display), m_texture_descriptor_heap(texture_descriptor_heap),
     m_view_controller(input, window, config.edit_mode, config.invert_mouse, config.mouse_sensitivity),
-    m_depth_stencil_for_object_id(dx12_display->device(), config.width, config.height,
+    m_depth_stencil_for_object_id(*dx12_display->device().Get(), config.width, config.height,
         Bit_depth::bpp32, D3D12_RESOURCE_STATE_DEPTH_WRITE,
         texture_descriptor_heap, texture_index),
     m_object_id_pass(dx12_display->device(), m_depth_stencil_for_object_id.dsv_format(),
@@ -86,10 +87,8 @@ float estimate_object_screen_space_radius(const std::vector<int>& object_ids_on_
 }
 
 
-// class used instead of struct to avoid warning at forward declaration point
-class User_action
+struct User_action
 {
-public:
     bool select_object;
     bool move_object;
     bool zoom_object;
@@ -142,7 +141,7 @@ void User_interface::create_selection_command_list()
 {
     throw_if_failed(m_dx12_display->device()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
         IID_PPV_ARGS(&m_command_allocator)));
-    m_command_list = create_command_list(m_dx12_display->device(), m_command_allocator);
+    m_command_list = create_command_list(*m_dx12_display->device().Get(), m_command_allocator);
 }
 
 void User_interface::object_selection_and_mouse_pointer_update(UINT back_buf_index,
@@ -285,7 +284,7 @@ void User_interface::object_id_pass(UINT back_buf_index, Scene& scene, View& vie
     throw_if_failed(m_command_list->Reset(m_command_allocator.Get(),
         initial_pipeline_state));
 
-    ID3D12DescriptorHeap* heaps[] = { m_texture_descriptor_heap.Get() };
+    ID3D12DescriptorHeap* heaps[] = { &m_texture_descriptor_heap };
     m_command_list->SetDescriptorHeaps(_countof(heaps), heaps);
 
     m_object_id_pass.record_commands(back_buf_index, scene, view, m_depth_stencil_for_object_id,
@@ -319,8 +318,6 @@ void record_frame_time(double& frame_time, double& fps)
 void User_interface::render_2d_text(size_t objects_count, int triangles_count,
     size_t vertices_count, size_t lights_count, int draw_calls)
 {
-#ifndef NO_TEXT
-
     static double frame_time = 0.0;
     static double fps = 0.0;
     record_frame_time(frame_time, fps);
@@ -375,8 +372,6 @@ void User_interface::render_2d_text(size_t objects_count, int triangles_count,
         ss << "Press F1 for help";
 
     render_2d_text(ss.str());
-
-#endif
 }
 
 void User_interface::render_2d_text(const std::wstring& message)
@@ -385,6 +380,8 @@ void User_interface::render_2d_text(const std::wstring& message)
     float x_position = 5.0f;
     float y_position = 5.0f;
     m_text.draw(message.c_str(), x_position, y_position, m_dx12_display->back_buf_index());
+#else
+    ignore_unused_variable(message);
 #endif
 }
 
@@ -392,5 +389,7 @@ void User_interface::scaling_changed(float dpi)
 {
 #ifndef NO_TEXT
     m_text.scaling_changed(dpi);
+#else
+    ignore_unused_variable(dpi);
 #endif
 }
