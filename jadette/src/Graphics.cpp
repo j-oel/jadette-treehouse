@@ -22,12 +22,7 @@
 #include "User_interface.h"
 
 
-#if defined(_DEBUG)
-#include "build/d-pixel_shader_vertex_colors.h"
-#include "build/d-pixel_shader_no_vertex_colors.h"
-#include "build/d-vertex_shader_srv_instance_data.h"
-#include "build/d-vertex_shader_srv_instance_data_vertex_colors.h"
-#else
+#ifndef _DEBUG
 #include "build/pixel_shader_vertex_colors.h"
 #include "build/pixel_shader_no_vertex_colors.h"
 #include "build/vertex_shader_srv_instance_data.h"
@@ -51,14 +46,19 @@ public:
 private:
     void finish_init();
     void render_loading_message();
+    void render_info_text();
     void record_frame_rendering_commands_in_command_list();
+    Commands commands();
     void set_and_clear_render_target();
+    void prepare_render_target_for_present();
     int create_texture_descriptor_heap();
     void create_pipeline_state(ComPtr<ID3D12PipelineState>& pipeline_state,
         const wchar_t* debug_name, Backface_culling backface_culling,
         Alpha_blending alpha_blending, Depth_write depth_write);
     void create_pipeline_states(const Config& config);
     ComPtr<ID3D12GraphicsCommandList> create_main_command_list();
+    void update_user_interface();
+    void reload_shaders_if_requested();
 
     Config m_config;
     std::shared_ptr<Dx12_display> m_dx12_display;
@@ -80,7 +80,9 @@ private:
     std::unique_ptr<Scene> m_scene;
     View m_view;
     Input& m_input;
+#ifndef NO_UI
     User_interface m_user_interface;
+#endif
 
     UINT m_render_settings;
     bool m_use_vertex_colors;
@@ -126,6 +128,7 @@ namespace
     constexpr UINT texture_mapping_enabled = 1;
     constexpr UINT normal_mapping_enabled  = 1 << 2;
     constexpr UINT shadow_mapping_enabled  = 1 << 3;
+    constexpr UINT early_z_pass_enabled    = 1 << 4;
 }
 
 Graphics_impl::Graphics_impl(HWND window, const Config& config, Input& input) :
@@ -135,17 +138,20 @@ Graphics_impl::Graphics_impl(HWND window, const Config& config, Input& input) :
             config.swap_chain_buffer_count)),
     m_device(m_dx12_display->device()),
     m_textures_count(create_texture_descriptor_heap()),
-    m_depth_stencil(1, Depth_stencil(m_device, config.width, config.height,
+    m_depth_stencil(1, Depth_stencil(*m_device.Get(), config.width, config.height,
         Bit_depth::bpp16, D3D12_RESOURCE_STATE_DEPTH_WRITE,
-        m_texture_descriptor_heap, texture_index_of_depth_buffer())),
+        *m_texture_descriptor_heap.Get(), texture_index_of_depth_buffer())),
     m_root_signature(m_device, &m_render_settings),
     m_depth_pass(m_device, m_depth_stencil[0].dsv_format(), &m_root_signature,
         config.backface_culling),
     m_view(config.width, config.height, XMVectorSet(0.0, 0.0f, 1.0f, 1.0f),
         XMVectorZero(), 0.1f, 4000.0f, config.fov),
     m_input(input),
-    m_user_interface(m_dx12_display, &m_root_signature, m_texture_descriptor_heap,
+#ifndef NO_UI
+    m_user_interface(m_dx12_display, &m_root_signature, *m_texture_descriptor_heap.Get(),
         texture_index_of_depth_buffer(), input, window, config),
+#endif
+    m_render_settings(texture_mapping_enabled | normal_mapping_enabled | shadow_mapping_enabled),
     m_use_vertex_colors(config.use_vertex_colors),
     m_width(config.width),
     m_height(config.height),
@@ -156,23 +162,25 @@ Graphics_impl::Graphics_impl(HWND window, const Config& config, Input& input) :
     create_main_command_list();
     for (UINT i = 1; i < m_dx12_display->swap_chain_buffer_count(); ++i)
     {
-        m_depth_stencil.push_back(Depth_stencil(m_device, config.width, config.height,
+        m_depth_stencil.push_back(Depth_stencil(*m_device.Get(), config.width, config.height,
             Bit_depth::bpp16, D3D12_RESOURCE_STATE_DEPTH_WRITE,
-            m_texture_descriptor_heap, texture_index_of_depth_buffer()));
-    }
-
-    for (UINT i = 0; i < m_dx12_display->swap_chain_buffer_count(); ++i)
-    {
-        m_depth_stencil[i].set_debug_names((std::wstring(L"DSV Heap ") + 
+            *m_texture_descriptor_heap.Get(), texture_index_of_depth_buffer()));
+    
+        #ifdef _DEBUG
+        m_depth_stencil[i].set_debug_names((std::wstring(L"DSV Heap ") +
             std::to_wstring(i)).c_str(), (std::wstring(L"Depth Buffer ") +
                 std::to_wstring(i)).c_str());
+        #endif
     }
 
     auto load_scene = [=]()
     {
         auto swap_chain_buffer_count = m_dx12_display->swap_chain_buffer_count();
-        m_scene = std::make_unique<Scene>(m_device, swap_chain_buffer_count,
-            data_path + config.scene_file, m_texture_descriptor_heap,
+        m_scene = std::make_unique<Scene>(*m_device.Get(), swap_chain_buffer_count,
+        #ifndef NO_SCENE_FILE
+            data_path + config.scene_file, 
+        #endif
+            *m_texture_descriptor_heap.Get(),
             m_root_signature.m_root_param_index_of_values);
 
         DirectX::XMFLOAT3 eye_pos;
@@ -181,6 +189,7 @@ Graphics_impl::Graphics_impl(HWND window, const Config& config, Input& input) :
         DirectX::XMFLOAT3 focus_point;
         m_scene->initial_view_focus_point(focus_point);
         m_view.set_focus_point(focus_point);
+        m_view.update();
         m_scene_loaded = true;
     };
     
@@ -191,8 +200,13 @@ Graphics_impl::Graphics_impl(HWND window, const Config& config, Input& input) :
         m_shaders_compiled = true;
     };
 
+#ifndef NO_SCENE_FILE
     m_scene_loading_thread = std::thread(load_scene);
     m_shader_loading_thread = std::thread(load_shaders);
+#else
+    load_scene();
+    load_shaders();
+#endif
 }
 
 Graphics_impl::~Graphics_impl()
@@ -206,10 +220,22 @@ Graphics_impl::~Graphics_impl()
 
 void Graphics_impl::finish_init()
 {
+#ifndef NO_SCENE_FILE
     m_scene_loading_thread.join();
     m_shader_loading_thread.join();
+#endif
     m_init_done = true;
 }
+
+#ifndef NO_UI
+UINT update_render_settings(const User_interface& user_interface)
+{
+    return (user_interface.texture_mapping() ? texture_mapping_enabled : 0) |
+           (user_interface.shadow_mapping()  ? shadow_mapping_enabled  : 0) |
+           (user_interface.normal_mapping()  ? normal_mapping_enabled  : 0) |
+           (user_interface.early_z_pass()  ? early_z_pass_enabled      : 0);
+}
+#endif
 
 void Graphics_impl::update()
 {
@@ -219,28 +245,11 @@ void Graphics_impl::update()
     if (!m_init_done)
         finish_init();
 
-    m_user_interface.update(m_dx12_display->back_buf_index(), *m_scene.get(), m_view);
+    update_user_interface();
 
-    try
-    {
-        if (m_user_interface.reload_shaders_requested())
-        {
-            create_pipeline_states(m_config);
-            m_depth_pass.reload_shaders(m_device, m_config.backface_culling);
-            m_user_interface.reload_shaders(m_device, m_config.backface_culling);
-        }
-    }
-    catch (Shader_compilation_error& e)
-    {
-        print("Shader compilation of " + e.m_shader +
-            " failed. See output window if you run in debugger.");
-    }
+    reload_shaders_if_requested();
 
     m_scene->update();
-
-    m_render_settings = (m_user_interface.texture_mapping() ? texture_mapping_enabled : 0) |
-                        (m_user_interface.shadow_mapping() ? shadow_mapping_enabled : 0) |
-                        (m_user_interface.normal_mapping()  ? normal_mapping_enabled  : 0);
 }
 
 void Graphics_impl::render()
@@ -253,8 +262,7 @@ void Graphics_impl::render()
 
         m_dx12_display->execute_command_list(m_command_list);
 
-        m_user_interface.render_2d_text(m_scene->objects_count(), m_scene->triangles_count(),
-            m_scene->vertices_count(), m_scene->lights_count(), Mesh::draw_calls());
+        render_info_text();
     }
     else
     {
@@ -269,7 +277,7 @@ void Graphics_impl::render_loading_message()
     set_and_clear_render_target();
     m_command_list->Close();
 
-#ifndef NO_TEXT
+#if !defined(NO_TEXT) && !defined(NO_UI)
     std::wstring message = L"Loading shaders...";
     if (m_shaders_compiled)
         message += L" done.";
@@ -279,16 +287,57 @@ void Graphics_impl::render_loading_message()
     
     m_dx12_display->execute_command_list(m_command_list);
     m_user_interface.render_2d_text(message);
-#endif
 
     using namespace std::chrono_literals;
     std::this_thread::sleep_for(30ms); // It would be wasteful to render this with full frame rate,
                                        // hence sleep for a while.
+#endif
+}
+
+void Graphics_impl::render_info_text()
+{
+#if !defined(NO_TEXT) && !defined(NO_UI)
+    m_user_interface.render_2d_text(m_scene->objects_count(), m_scene->triangles_count(),
+        m_scene->vertices_count(), m_scene->lights_count(), Mesh::draw_calls());
+#endif
+    Mesh::reset_draw_calls();
+}
+
+void Graphics_impl::update_user_interface()
+{
+#ifndef NO_UI
+    m_user_interface.update(m_dx12_display->back_buf_index(), *m_scene.get(), m_view);
+    m_render_settings = update_render_settings(m_user_interface);
+#endif
+}
+
+void Graphics_impl::reload_shaders_if_requested()
+{
+#ifndef NO_UI
+    try
+    {
+        if (m_user_interface.reload_shaders_requested())
+        {
+            create_pipeline_states(m_config);
+            m_depth_pass.reload_shaders(m_device, m_config.backface_culling);
+            m_user_interface.reload_shaders(m_device, m_config.backface_culling);
+        }
+    }
+    catch (Shader_compilation_error& e)
+    {
+        print("Shader compilation of " + e.m_shader +
+            " failed. See output window if you run in debugger.");
+    }
+#endif
 }
 
 void Graphics_impl::scaling_changed(float dpi)
 {
+#ifndef NO_UI
     m_user_interface.scaling_changed(dpi);
+#else
+    ignore_unused_variable(dpi);
+#endif
 }
 
 int Graphics_impl::create_texture_descriptor_heap()
@@ -307,14 +356,11 @@ void Graphics_impl::create_pipeline_state(ComPtr<ID3D12PipelineState>& pipeline_
     auto dsv_format = m_depth_stencil[0].dsv_format();
 
     Input_layout input_layout = m_use_vertex_colors ? Input_layout::position_normal_tangents_color
-                                                    : Input_layout::position_normal_tangents;
-    
-    const char* vertex_shader = m_use_vertex_colors ?
-        "vertex_shader_srv_instance_data_vertex_colors" :
-        "vertex_shader_srv_instance_data";
-    const char* pixel_shader = m_use_vertex_colors ? "pixel_shader_vertex_colors"
-                                                   : "pixel_shader_no_vertex_colors";
+        : Input_layout::position_normal_tangents;
 
+    // Don't use pre-compiled shaders in debug mode to lower turn-around time
+    // when the shaders have been changed. Also decreases time for full rebuild.
+#ifndef _DEBUG
     if (!pipeline_state)
     {
         auto compiled_vertex_shader = m_use_vertex_colors ?
@@ -335,9 +381,20 @@ void Graphics_impl::create_pipeline_state(ComPtr<ID3D12PipelineState>& pipeline_
             backface_culling, alpha_blending, depth_write);
     }
     else
+#endif
+#if !defined(NO_UI)
+    {
+        const char* vertex_shader = m_use_vertex_colors ?
+            "vertex_shader_srv_instance_data_vertex_colors" :
+            "vertex_shader_srv_instance_data";
+        const char* pixel_shader = m_use_vertex_colors ? "pixel_shader_vertex_colors"
+                                                       : "pixel_shader_no_vertex_colors";
+
         ::create_pipeline_state(m_device, pipeline_state, m_root_signature.get(),
             vertex_shader, pixel_shader, dsv_format, render_targets_count, input_layout,
             backface_culling, alpha_blending, depth_write);
+    }
+#endif
     SET_DEBUG_NAME(pipeline_state, debug_name);
 }
 
@@ -372,7 +429,7 @@ void Graphics_impl::create_pipeline_states(const Config& config)
 
 ComPtr<ID3D12GraphicsCommandList> Graphics_impl::create_main_command_list()
 {
-    m_command_list = create_command_list(m_device, m_dx12_display->command_allocator());
+    m_command_list = create_command_list(*m_device.Get(), m_dx12_display->command_allocator());
     SET_DEBUG_NAME(m_command_list, L"Main Command List");
     return m_command_list;
 }
@@ -383,7 +440,16 @@ void Graphics_impl::set_and_clear_render_target()
         m_depth_stencil[m_dx12_display->back_buf_index()].cpu_handle());
 }
 
-void Graphics_impl::record_frame_rendering_commands_in_command_list()
+void Graphics_impl::prepare_render_target_for_present()
+{
+    // If text is enabled, the text object takes care of the render target state transition.
+#if defined(NO_TEXT) || defined(NO_UI)
+    m_dx12_display->barrier_transition(D3D12_RESOURCE_STATE_RENDER_TARGET,
+        D3D12_RESOURCE_STATE_PRESENT);
+#endif
+}
+
+Commands Graphics_impl::commands()
 {
     Commands c(*m_command_list.Get(), m_dx12_display->back_buf_index(),
         &m_depth_stencil[m_dx12_display->back_buf_index()], Texture_mapping::enabled,
@@ -392,15 +458,22 @@ void Graphics_impl::record_frame_rendering_commands_in_command_list()
         &m_view, m_scene.get(), &m_depth_pass,
         &m_root_signature, m_root_signature.m_root_param_index_of_instance_data);
 
-    Mesh::reset_draw_calls();
-    c.set_back_buf_index(m_dx12_display->back_buf_index());
+    return c;
+}
+
+// This is the central function that defines the main rendering algorithm,
+// i.e. on a fairly high level what is done to render a frame, and in what order.
+// The goal is that this should look as close as possible to pseudo code.
+void Graphics_impl::record_frame_rendering_commands_in_command_list()
+{
+    Commands c { commands() };
     c.upload_data_to_gpu();
     c.set_descriptor_heap(m_texture_descriptor_heap);
     c.set_root_signature();
     c.set_shader_constants();
     if (m_render_settings & shadow_mapping_enabled)
         c.generate_shadow_maps();
-    if (m_user_interface.early_z_pass())
+    if (m_render_settings & early_z_pass_enabled)
         c.early_z_pass();
     else
         c.clear_depth_stencil();
@@ -409,7 +482,7 @@ void Graphics_impl::record_frame_rendering_commands_in_command_list()
     c.set_shadow_map_for_shader();
     m_scene->sort_transparent_objects_back_to_front(m_view);
 
-    if (m_user_interface.early_z_pass())
+    if (m_render_settings & early_z_pass_enabled)
     {
         c.draw_dynamic_objects(m_pipeline_state_early_z);
         c.draw_static_objects(m_pipeline_state_early_z);
@@ -426,10 +499,7 @@ void Graphics_impl::record_frame_rendering_commands_in_command_list()
         c.draw_transparent_objects(m_pipeline_state_transparency);
     }
 
-    // If text is enabled, the text object takes care of the render target state transition.
-#ifdef NO_TEXT
-    m_dx12_display->barrier_transition(D3D12_RESOURCE_STATE_RENDER_TARGET, 
-        D3D12_RESOURCE_STATE_PRESENT);
-#endif
+    prepare_render_target_for_present();
+
     c.close();
 }

@@ -9,17 +9,19 @@
 
 #include "Mesh.h"
 
+// A unit cube centered in origo.
 class Cube : public Mesh
 {
 public:
-    Cube(ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList& command_list);
+    Cube(ID3D12Device& device, ID3D12GraphicsCommandList& command_list);
 
 private:
 
 };
 
+// A unit plane centered in origo, through y = 0, facing upwards.
 class Plane : public Mesh
 {
 public:
-    Plane(ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList& command_list);
+    Plane(ID3D12Device& device, ID3D12GraphicsCommandList& command_list);
 };

@@ -18,7 +18,10 @@ enum class Input_layout;
 
 using Microsoft::WRL::ComPtr;
 
-
+//
+// The purpose of this class is to enable the expression of recording rendering commands
+// in a command list in a very concise and non-noisy way.
+//
 class Commands
 {
 public:
@@ -26,7 +29,6 @@ public:
         Depth_stencil* depth_stencil, Texture_mapping texture_mapping, Input_layout input_layout,
         const View* view, Scene* scene, Depth_pass* depth_pass, Root_signature* root_signature,
         int root_param_index_of_instance_data);
-    void set_back_buf_index(UINT index) { m_back_buf_index = index; }
 
     void set_input_layout(Input_layout input_layout) { m_input_layout = input_layout; }
     void upload_data_to_gpu();

@@ -11,7 +11,7 @@
 using Microsoft::WRL::ComPtr;
 
 
-enum class Texture_mapping { enabled, disabled };
+enum class Texture_mapping;
 enum class Input_layout;
 
 
@@ -34,25 +34,31 @@ namespace DirectX
     struct XMFLOAT4;
 }
 
+// This class is the public interface of the scene, i.e. it contains all the operations
+// that can be performed on the scene "from the outside". It uses the pimpl idiom so that
+// the implementation details of the data representation of a scene can be hid from its users.
+// Among other things to speed up compilation times.
 class Scene
 {
 public:
-    Scene(ComPtr<ID3D12Device> device, UINT swap_chain_buffer_count, const std::string& scene_file,
-        ComPtr<ID3D12DescriptorHeap> texture_descriptor_heap, int root_param_index_of_values);
+    Scene(ID3D12Device& device, UINT swap_chain_buffer_count, const std::string& scene_file,
+        ID3D12DescriptorHeap& texture_descriptor_heap, int root_param_index_of_values);
+    Scene(ID3D12Device& device, UINT swap_chain_buffer_count,
+        ID3D12DescriptorHeap& texture_descriptor_heap, int root_param_index_of_values);
     ~Scene();
     void update();
 
     void draw_static_objects(ID3D12GraphicsCommandList& command_list, 
-        Texture_mapping texture_mapping, const Input_layout& input_layout) const;
+        Texture_mapping texture_mapping, Input_layout input_layout) const;
     void draw_dynamic_objects(ID3D12GraphicsCommandList& command_list, 
-        Texture_mapping texture_mapping, const Input_layout& input_layout) const;
+        Texture_mapping texture_mapping, Input_layout input_layout) const;
     void sort_transparent_objects_back_to_front(const View& view);
     void draw_transparent_objects(ID3D12GraphicsCommandList& command_list,
-        Texture_mapping texture_mapping, const Input_layout& input_layout) const;
+        Texture_mapping texture_mapping, Input_layout input_layout) const;
     void draw_alpha_cut_out_objects(ID3D12GraphicsCommandList& command_list,
-        Texture_mapping texture_mapping, const Input_layout& input_layout) const;
+        Texture_mapping texture_mapping, Input_layout input_layout) const;
     void draw_two_sided_objects(ID3D12GraphicsCommandList& command_list,
-        Texture_mapping texture_mapping, const Input_layout& input_layout) const;
+        Texture_mapping texture_mapping, Input_layout input_layout) const;
     void upload_data_to_gpu(ID3D12GraphicsCommandList& command_list, UINT back_buf_index);
     void generate_shadow_maps(UINT back_buf_index,
         Depth_pass& depth_pass, ID3D12GraphicsCommandList& command_list);

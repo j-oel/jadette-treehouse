@@ -7,10 +7,10 @@
 
 #include "pch.h"
 #include "Shadow_map.h"
-#include "Scene.h"
 #include "Commands.h"
 #include "util.h"
 #include "View.h"
+#include "Depth_pass.h"
 
 
 using namespace DirectX;
@@ -22,8 +22,8 @@ namespace
     constexpr float fov = 90.0f;
 }
 
-Shadow_map::Shadow_map(ComPtr<ID3D12Device> device, UINT swap_chain_buffer_count,
-    ComPtr<ID3D12DescriptorHeap> texture_descriptor_heap, UINT texture_index,
+Shadow_map::Shadow_map(ID3D12Device& device, UINT swap_chain_buffer_count,
+    ID3D12DescriptorHeap& texture_descriptor_heap, UINT texture_index,
     UINT texture_index_increment,
     Bit_depth bit_depth/* = Bit_depth::bpp16*/, int size/* = 1024*/) :
     m_view(size, size, XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f), XMVectorZero(), near_z, far_z, fov),
@@ -35,9 +35,12 @@ Shadow_map::Shadow_map(ComPtr<ID3D12Device> device, UINT swap_chain_buffer_count
         m_depth_stencil.push_back(Depth_stencil(device, size, size, bit_depth,
           D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, texture_descriptor_heap,
             texture_index + i * texture_index_increment));
+
+        #ifdef _DEBUG
         m_depth_stencil[i].set_debug_names((std::wstring(L"Shadow DSV Heap ") +
             std::to_wstring(i)).c_str(),
             (std::wstring(L"Shadow Buffer ") + std::to_wstring(i)).c_str());
+        #endif
     }
 }
 

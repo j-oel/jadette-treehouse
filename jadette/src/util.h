@@ -11,10 +11,12 @@
 #include <exception>
 
 
+template<typename T> void ignore_unused_variable(const T&) { }
+
 #if defined(_DEBUG)
 #define SET_DEBUG_NAME(object, name) object->SetName(name)
 #else
-#define SET_DEBUG_NAME(object, name) 
+#define SET_DEBUG_NAME(object, name) ignore_unused_variable(name)
 #endif
 
 
@@ -36,6 +38,8 @@ constexpr int size_in_words_of_XMMATRIX = size_of_xmmatrix / bytes_per_word;
 constexpr int size_in_words_of_XMVECTOR = size_of_xmvector / bytes_per_word;
 constexpr auto data_path = "../data/";
 
+enum class Texture_mapping { enabled, disabled };
+enum class Backface_culling { enabled, disabled };
 
 class Time_impl;
 
@@ -67,6 +71,7 @@ struct com_exception
 
 inline void throw_if_failed(HRESULT hr)
 {
+#ifdef __cpp_exceptions
     if (FAILED(hr))
     {
         if (hr == E_OUTOFMEMORY)
@@ -74,6 +79,9 @@ inline void throw_if_failed(HRESULT hr)
         else
             throw com_exception(hr);
     }
+#else
+    ignore_unused_variable(hr);
+#endif
 }
 
 void log(const std::string& text);

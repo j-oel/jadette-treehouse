@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include "Root_signature.h"
-
 
 using Microsoft::WRL::ComPtr;
 
@@ -16,9 +14,13 @@ using Microsoft::WRL::ComPtr;
 class Scene;
 class View;
 class Depth_stencil;
+class Root_signature;
 class Read_back_depth_stencil;
+enum class Backface_culling;
 
-
+// This class is used to render a full screen pass to an off screen buffer, where each 
+// pixel contains the object id of the object that covers that pixel. That buffer can
+// then be retrieved from the GPU to know what object each pixel corresponds to.
 class Object_id_pass
 {
 public:

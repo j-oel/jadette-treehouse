@@ -34,6 +34,8 @@ struct Shader_material
     UINT material_settings;
 };
 
+// The purpose of this class is both to be the interface for the functions that read data from
+// a file into a scene object, and also to be the definition of that part of the scene object.
 struct Scene_components
 {
     std::vector<std::shared_ptr<Graphical_object> > graphical_objects;
@@ -57,3 +59,14 @@ struct Scene_components
     DirectX::XMFLOAT3 initial_view_position;
     DirectX::XMFLOAT3 initial_view_focus_point;
 };
+
+inline DirectX::PackedVector::XMHALF4 convert_float4_to_half4(const DirectX::XMFLOAT4& vec)
+{
+    DirectX::PackedVector::XMHALF4 half4;
+    using DirectX::PackedVector::XMConvertFloatToHalf;
+    half4.x = XMConvertFloatToHalf(vec.x);
+    half4.y = XMConvertFloatToHalf(vec.y);
+    half4.z = XMConvertFloatToHalf(vec.z);
+    half4.w = XMConvertFloatToHalf(vec.w);
+    return half4;
+}
