@@ -2,9 +2,9 @@
 
 Uses the [Jadette](https://github.com/j-oel/jadette) 3D engine.
 
-<img src="https://raw.githubusercontent.com/j-oel/jadette-media/master/screenshots/jadette-treehouse1.png" width="700" alt="Jadette Tree House screenshot 1">
+<img src="https://raw.githubusercontent.com/j-oel/jadette-media/master/screenshots/jadette-treehouse1.jpg" width="800" alt="Jadette Tree House screenshot 1">
 
-<img src="https://raw.githubusercontent.com/j-oel/jadette-media/master/screenshots/jadette-treehouse2.png" width="700" alt="Jadette Tree House screenshot 2">
+<img src="https://raw.githubusercontent.com/j-oel/jadette-media/master/screenshots/jadette-treehouse2.jpg" width="800" alt="Jadette Tree House screenshot 2">
 
 
 The 3D model including textures, is an adaptation of 
