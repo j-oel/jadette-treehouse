@@ -23,7 +23,8 @@ User_interface::User_interface(std::shared_ptr<Dx12_display> dx12_display,
     Root_signature* root_signature, ID3D12DescriptorHeap& texture_descriptor_heap, 
     UINT texture_index, Input& input, HWND window, const Config& config) :
     m_dx12_display(dx12_display), m_texture_descriptor_heap(texture_descriptor_heap),
-    m_view_controller(input, window, config.edit_mode, config.invert_mouse, config.mouse_sensitivity),
+    m_view_controller(input, window, config.edit_mode, config.invert_mouse,
+        config.mouse_sensitivity, config.max_speed),
     m_depth_stencil_for_object_id(*dx12_display->device().Get(), config.width, config.height,
         Bit_depth::bpp32, D3D12_RESOURCE_STATE_DEPTH_WRITE,
         texture_descriptor_heap, texture_index),
@@ -377,8 +378,8 @@ void User_interface::render_2d_text(size_t objects_count, int triangles_count,
 void User_interface::render_2d_text(const std::wstring& message)
 {
 #ifndef NO_TEXT
-    float x_position = 5.0f;
-    float y_position = 5.0f;
+    float x_position = 8.0f;
+    float y_position = 8.0f;
     m_text.draw(message.c_str(), x_position, y_position, m_dx12_display->back_buf_index());
 #else
     ignore_unused_variable(message);
